@@ -54,4 +54,30 @@
         selection: hold
       loop: ['kubelet', 'kubeadm', 'kubectl']
 
+    # Mount the volume
+    - name: Mount the volume
+      mount:
+        path: /mnt/volume
+        src: /dev/sdb1
+        fstype: ext4
+        state: mounted
 
+    # Enable ufw
+    - name: Enable ufw
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    # Allow only SSH and Kubernetes necessary ports
+    - name: Allow only SSH and Kubernetes necessary ports
+      ansible.builtin.ufw:
+        rule: allow
+        name: "{{ item }}"
+      loop:
+        - 22
+        - 6443
+        - 2379:2380
+        - 10250
+        - 10251
+        - 10252
+        - 10255
