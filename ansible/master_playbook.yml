@@ -1,0 +1,10 @@
+# Questo set di tasks viene eseguito solo sull'host master.
+- hosts: masters
+  become: yes
+  tasks:
+    # Inizializza il cluster Kubernetes con kubeadm.
+    - name: Initialize Kubernetes Master
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /home/your_user/kubeadm_init_output
+      args:
+        # Questa linea fa sì che il task venga saltato se il file /etc/kubernetes/admin.conf esiste già.
+        creates: /etc/kubernetes/admin.conf

@@ -54,25 +54,4 @@
         selection: hold
       loop: ['kubelet', 'kubeadm', 'kubectl']
 
-# Questo set di tasks viene eseguito solo sull'host master.
-- hosts: masters
-  become: yes
-  tasks:
-    # Inizializza il cluster Kubernetes con kubeadm.
-    - name: Initialize Kubernetes Master
-      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /home/your_user/kubeadm_init_output
-      args:
-        # Questa linea fa sì che il task venga saltato se il file /etc/kubernetes/admin.conf esiste già.
-        creates: /etc/kubernetes/admin.conf
 
-# Questo set di tasks viene eseguito solo sugli host worker.
-- hosts: workers
-  become: yes
-  tasks:
-    # Estrae il comando 'kubeadm join' dal nodo master.
-    - name: Extract join command from master
-      shell: 'ssh your_user@master_ip "cat /home/your_user/kubeadm_init_output | grep \"kubeadm join\" "'
-      register: join_command
-    # Esegue il comando 'kubeadm join' per far unire il nodo worker al cluster.
-    - name: Join cluster
-      shell: "{{ join_command.stdout }}"
