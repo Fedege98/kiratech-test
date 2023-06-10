@@ -1,39 +1,78 @@
----
+# Il primo set di tasks viene eseguito su tutti gli host, sia masters che workers.
 - hosts: all
+  # 'become: yes' permette di eseguire tutti i tasks come root.
   become: yes
   tasks:
+    # Installa i pacchetti necessari per aggiungere nuovi repository APT via HTTPS.
     - name: Install prerequisites
       apt:
         name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
         state: present
+
+    # Aggiunge la chiave GPG del repository Docker all'elenco delle chiavi APT attendibili.
     - name: Add Docker GPG key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
+
+    # Aggiunge il repository Docker ai repository APT.
     - name: Add Docker APT repository
       apt_repository:
         repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
         state: present
+
+    # Installa Docker dal repository Docker.
     - name: Install Docker
       apt:
         name: docker-ce
         state: present
         update_cache: yes
+
+    # Aggiunge la chiave GPG del repository Kubernetes all'elenco delle chiavi APT attendibili.
     - name: Add Kubernetes GPG key
       apt_key:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
+
+    # Aggiunge il repository Kubernetes ai repository APT.
     - name: Add Kubernetes APT repository
       apt_repository:
         repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
         state: present
+
+    # Installa i pacchetti Kubernetes dal repository Kubernetes.
     - name: Install Kubernetes
       apt:
         name: ['kubelet', 'kubeadm', 'kubectl']
         state: present
         update_cache: yes
+
+    # Previene l'aggiornamento automatico dei pacchetti Kubernetes, che potrebbe causare problemi di compatibilità.
     - name: Hold Kubernetes packages
       dpkg_selections:
         name: "{{ item }}"
         selection: hold
       loop: ['kubelet', 'kubeadm', 'kubectl']
+
+# Questo set di tasks viene eseguito solo sull'host master.
+- hosts: masters
+  become: yes
+  tasks:
+    # Inizializza il cluster Kubernetes con kubeadm.
+    - name: Initialize Kubernetes Master
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /home/your_user/kubeadm_init_output
+      args:
+        # Questa linea fa sì che il task venga saltato se il file /etc/kubernetes/admin.conf esiste già.
+        creates: /etc/kubernetes/admin.conf
+
+# Questo set di tasks viene eseguito solo sugli host worker.
+- hosts: workers
+  become: yes
+  tasks:
+    # Estrae il comando 'kubeadm join' dal nodo master.
+    - name: Extract join command from master
+      shell: 'ssh your_user@master_ip "cat /home/your_user/kubeadm_init_output | grep \"kubeadm join\" "'
+      register: join_command
+    # Esegue il comando 'kubeadm join' per far unire il nodo worker al cluster.
+    - name: Join cluster
+      shell: "{{ join_command.stdout }}"
