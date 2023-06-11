@@ -1,4 +1,5 @@
 # Configura il provider Azure
+#link : https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/getting-started
 provider "azurerm" {
   features {}
   subscription_id = "your_subscription_id"
@@ -6,6 +7,19 @@ provider "azurerm" {
   client_secret   = "your_client_secret"
   tenant_id       = "your_tenant_id"
 }
+
+# Configura il provider Kubernetes
+provider "kubernetes" {
+  config_path = "~/.kube/config"  # Dovrai puntare al tuo file di configurazione di Kubernetes
+}
+
+# Crea il namespace Kubernetes
+resource "kubernetes_namespace" "kiratech-test" {
+  metadata {
+    name = "kiratech-test"
+  }
+}
+
 
 # Crea le macchine virtuali per i master del cluster Kubernetes
 resource "azurerm_virtual_machine" "master" {
@@ -46,17 +60,5 @@ resource "azurerm_virtual_machine" "worker" {
 
   provisioner "local-exec" {
     command = "ansible-playbook -i '${self.public_ip},' worker_playbook.yml"
-  }
-}
-
-# Configura il provider Kubernetes
-provider "kubernetes" {
-  config_path = "~/.kube/config"  # Dovrai puntare al tuo file di configurazione di Kubernetes
-}
-
-# Crea il namespace Kubernetes
-resource "kubernetes_namespace" "kiratech-test" {
-  metadata {
-    name = "kiratech-test"
   }
 }
