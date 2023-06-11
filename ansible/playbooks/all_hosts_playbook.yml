@@ -8,7 +8,7 @@
       apt:
         name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
         state: present
-
+  
     # Aggiunge la chiave GPG del repository Docker all'elenco delle chiavi APT attendibili.
     - name: Add Docker GPG key
       apt_key:

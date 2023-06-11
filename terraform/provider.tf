@@ -18,6 +18,14 @@ resource "azurerm_virtual_machine" "master" {
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
   // Aggiungi qui la configurazione per il disco, l'immagine, ecc.
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${self.public_ip},' all_hosts_playbook.yml"
+  }
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${self.public_ip},' master_playbook.yml"
+  }
 }
 
 # Crea le macchine virtuali per i worker del cluster Kubernetes
@@ -31,32 +39,13 @@ resource "azurerm_virtual_machine" "worker" {
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
   // Aggiungi qui la configurazione per il disco, l'immagine, ecc.
-}
 
-# Esegui i playbook Ansible per configurare il cluster Kubernetes
-resource "null_resource" "ansible_provisioning" {
-  # Utilizza gli ID delle istanze del cluster come trigger per eseguire il provisioning
-  triggers = {
-    cluster_instance_ids = "${join(",", azurerm_virtual_machine.master.*.id, azurerm_virtual_machine.worker.*.id)}"
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${self.public_ip},' all_hosts_playbook.yml"
   }
 
-  # Esegui il playbook Ansible per tutti gli host
   provisioner "local-exec" {
-    command = "ansible-playbook -i '${join(",", azurerm_virtual_machine.master.*.public_ip, azurerm_virtual_machine.worker.*.public_ip)},' all_host_playbook.yml"
-  }
-
-  # Esegui il playbook Ansible per i master
-  provisioner "local-exec" {
-    when    = "create"
-    on_each = "master"
-    command = "ansible-playbook -i '${azurerm_virtual_machine.master.*.public_ip},' master_playbook.yml"
-  }
-
-  # Esegui il playbook Ansible per i worker
-  provisioner "local-exec" {
-    when    = "create"
-    on_each = "worker"
-    command = "ansible-playbook -i '${azurerm_virtual_machine.worker.*.public_ip},' worker_playbook.yml"
+    command = "ansible-playbook -i '${self.public_ip},' worker_playbook.yml"
   }
 }
 
