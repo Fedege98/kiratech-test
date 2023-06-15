@@ -55,6 +55,7 @@
         selection: hold
       loop: ['kubelet', 'kubeadm', 'kubectl']
 
+    
     # Mount the volume
     - name: Mount the volume
       mount:
